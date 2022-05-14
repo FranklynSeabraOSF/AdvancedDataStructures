@@ -537,8 +537,8 @@ int main() {
         std::string data = line.substr(line.find(" "), line.find("\n"));
         std::string valueToFindSucessor = data.substr(0, line.find(" "));
         std::string version = data.substr(line.find(" "), line.find("\n"));
-        // NodePtr node = bst.successor(stoi(valueToFindSucessor), stoi(version));
-        // std::cout << "SUC" << valueToFindSucessor << ": " << node->data << std::endl;
+        NodePtr node = bst.successor(stoi(valueToFindSucessor), stoi(version));
+        std::cout << "SUC" << valueToFindSucessor << ": " << node->data << std::endl;
       } else if (command == "IMP") {
         std::string version = line.substr(line.find(" "), line.find("\n"));
         std::cout << "IMP" << version  << std::endl;
