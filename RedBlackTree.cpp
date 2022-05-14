@@ -45,9 +45,9 @@ class RedBlackTree {
     }
 
 
-    RedBlackTree getTreeByVersion(int version) {
+    RedBlackTree* getTreeByVersion(int version) {
       if (version >= this->version) {
-        return *this;
+        return this;
       }
       
       RedBlackTree *tree;
@@ -60,7 +60,7 @@ class RedBlackTree {
         versionToGoBack--;
       }
       tree->printTree();
-      return *tree;
+      return tree;
 
     }
 
@@ -319,20 +319,24 @@ class RedBlackTree {
       version = 0;
       previousTree = nullptr;
     }
-    RedBlackTree(const RedBlackTree& oldTree) { 
+    RedBlackTree(const RedBlackTree* oldTree) { 
       TNULL = new Node;
-      NodePtr newRoot = oldTree.root;
-      NodePtr leftNode = oldTree.TNULL->left;
-      NodePtr rightNode = oldTree.TNULL->right;
-      TNULL->color = oldTree.TNULL->color;
-      // root = deepCopyNode(oldTree.root);
-      // TNULL->left = deepCopyNode(oldTree.TNULL->left);
-      // TNULL->right = deepCopyNode(oldTree.TNULL->right);
+      NodePtr newRoot = oldTree->root;
+      NodePtr leftNode = oldTree->TNULL->left;
+      NodePtr rightNode = oldTree->TNULL->right;
+      // TNULL->color = oldTree->TNULL->color;
+      TNULL->color = oldTree->root->color;
+      
+      // root = deepCopyNode(oldTree->root);
+      // TNULL->left = deepCopyNode(oldTree->TNULL->left);
+      // TNULL->right = deepCopyNode(oldTree->TNULL->right);
       root = newRoot;
+      // root->left = leftNode;
+      // root->right = rightNode;
       TNULL->left = leftNode;
       TNULL->right = rightNode;
-      version = oldTree.version;
-      previousTree = oldTree.previousTree;
+      version = oldTree->version;
+      previousTree = oldTree->previousTree;
      }
     ~RedBlackTree() {
       delete TNULL;
@@ -345,6 +349,11 @@ class RedBlackTree {
 
     void preorder() {
       preOrderHelper(this->root);
+    }
+
+    void inorderByVersion(int version) {
+      RedBlackTree* tree = getTreeByVersion(version);
+      tree->inorder();
     }
 
     void inorder() {
@@ -445,7 +454,7 @@ class RedBlackTree {
 
     // Inserting a node
     void insert(int key) {
-      RedBlackTree oldTree = RedBlackTree(*this);
+      RedBlackTree oldTree = RedBlackTree(this);
       this->previousTree = &oldTree;
       this->version++;
       NodePtr node = new Node;
@@ -492,7 +501,7 @@ class RedBlackTree {
     }
 
     void deleteNode(int data) {
-      RedBlackTree oldTree = RedBlackTree(*this);
+      RedBlackTree oldTree = RedBlackTree(this);
       this->previousTree = &oldTree;
       this->version++;
       deleteNodeHelper(this->root, data);
@@ -533,18 +542,11 @@ int main() {
       } else if (command == "IMP") {
         std::string version = line.substr(line.find(" "), line.find("\n"));
         std::cout << "IMP" << version  << std::endl;
+        bst.inorderByVersion(stoi(version));
       }
     }
   } else {
     std::cout << "Couldn't open file\n";
   }
-  RedBlackTree bst2 = bst;
-  bst.printTree();
-  bst.inorder();
-  bst2.inorder();
-  // cout << bst.getRoot()->left->left->color << endl;
-  // cout << bst2.getRoot()->left->left->color << endl;
-  // bst2.printTree();
-  // bst.previousTree->printTree();
   return 0;  
 }
