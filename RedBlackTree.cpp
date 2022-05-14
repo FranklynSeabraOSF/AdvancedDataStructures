@@ -337,7 +337,10 @@ class RedBlackTree {
     ~RedBlackTree() {
       delete TNULL;
     }
-    // RedBlackTree& operator=(const RedBlackTree& rhs) {return *this;};
+    RedBlackTree operator=(const RedBlackTree& rbt) {
+      RedBlackTree tree2(rbt);
+      return tree2;
+    };
     RedBlackTree* clone() const { return new RedBlackTree(*this); }
 
     void preorder() {
