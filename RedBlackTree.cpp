@@ -17,33 +17,36 @@ struct Node {
 
 typedef Node *NodePtr;
 
+bool isNodePtrValid(NodePtr node) {
+  return node != nullptr && node->data > 0 && node != NULL && node->data < 38484704;
+}
+
+bool isNodeValid(Node node) {
+  return node.data > 0 && node.data < 38484704;
+}
+
+NodePtr deepCopyNode(NodePtr node) {
+  NodePtr newNode = new Node();
+  if (isNodePtrValid(node)) {
+    newNode->data = node->data;
+    newNode->color = node->color;
+    newNode->parent = node->parent;
+    newNode->left = new Node();
+    if (isNodePtrValid(node->left)) {
+      newNode->left = deepCopyNode(node->left);
+    }
+    newNode->right = new Node();
+    if (isNodePtrValid(node->right)) {
+      newNode->right = deepCopyNode(node->right);
+    }
+  }
+  return newNode;
+}
+
 class RedBlackTree { 
   private:
     NodePtr root;
     NodePtr TNULL;
-
-    void initializeNULLNode(NodePtr node, NodePtr parent) {
-      node->data = 0;
-      node->parent = parent;
-      node->left = nullptr;
-      node->right = nullptr;
-      node->color = 0;
-    }
-
-    NodePtr deepCopyNode(NodePtr node) {
-      if (node == nullptr || node->data < 0 || node == NULL || !node || node->data > 38484704 ) {
-        return nullptr;
-      }
-      cout << "deepCopyNode: " << node->data << endl;
-      NodePtr newNode = new Node();
-      newNode->data = node->data;
-      newNode->color = node->color;
-      newNode->parent = node->parent;
-      node->left = deepCopyNode(node->left);
-      node->right = deepCopyNode(node->right);
-      return newNode;
-    }
-
 
     RedBlackTree* getTreeByVersion(int version) {
       if (version >= this->version) {
@@ -59,7 +62,6 @@ class RedBlackTree {
         tree = this->previousTree;
         versionToGoBack--;
       }
-      tree->printTree();
       return tree;
 
     }
@@ -95,7 +97,7 @@ class RedBlackTree {
         inOrderHelper(node->left, nextDepth);
         cout << node->data << ",";
         cout << depth << ",";
-        string sColor = root->color ? "R" : "N";
+        string sColor = node->color ? "R" : "N";
         cout << sColor << " ";
         inOrderHelper(node->right, nextDepth);
       }
@@ -319,22 +321,9 @@ class RedBlackTree {
       version = 0;
       previousTree = nullptr;
     }
-    RedBlackTree(const RedBlackTree* oldTree) { 
-      TNULL = new Node;
-      NodePtr newRoot = oldTree->root;
-      NodePtr leftNode = oldTree->TNULL->left;
-      NodePtr rightNode = oldTree->TNULL->right;
-      // TNULL->color = oldTree->TNULL->color;
-      TNULL->color = oldTree->root->color;
-      
-      // root = deepCopyNode(oldTree->root);
-      // TNULL->left = deepCopyNode(oldTree->TNULL->left);
-      // TNULL->right = deepCopyNode(oldTree->TNULL->right);
-      root = newRoot;
-      // root->left = leftNode;
-      // root->right = rightNode;
-      TNULL->left = leftNode;
-      TNULL->right = rightNode;
+    RedBlackTree(const RedBlackTree* oldTree) {
+      TNULL = deepCopyNode(oldTree->TNULL);
+      root = deepCopyNode(oldTree->root);
       version = oldTree->version;
       previousTree = oldTree->previousTree;
      }
@@ -345,7 +334,22 @@ class RedBlackTree {
       RedBlackTree tree2(rbt);
       return tree2;
     };
-    RedBlackTree* clone() const { return new RedBlackTree(*this); }
+    RedBlackTree clone() {
+      RedBlackTree treeClone;
+      // treeClone.TNULL = deepCopyNode(TNULL);
+      treeClone.root = deepCopyNode(root);
+      treeClone.version = version;
+      treeClone.previousTree = previousTree;
+      return treeClone; 
+    }
+
+    void initializeNULLNode(NodePtr node, NodePtr parent) {
+      node->data = 0;
+      node->parent = parent;
+      node->left = nullptr;
+      node->right = nullptr;
+      node->color = 0;
+    }
 
     void preorder() {
       preOrderHelper(this->root);
@@ -385,6 +389,7 @@ class RedBlackTree {
 
     NodePtr successor(int key, int version) {
       // RedBlackTree tree = getTreeByVersion(version);
+      // tree.inorder();
       NodePtr x = this->searchTree(key);
       if (x == TNULL) {
         return sucessorHelper(this->getRoot(), key);
@@ -456,6 +461,7 @@ class RedBlackTree {
     void insert(int key) {
       RedBlackTree oldTree = RedBlackTree(this);
       this->previousTree = &oldTree;
+      
       this->version++;
       NodePtr node = new Node;
       node->parent = nullptr;
@@ -517,6 +523,7 @@ class RedBlackTree {
 
 int main() {
   RedBlackTree bst;
+
   std::string fileContent;
   std::ifstream entryFile("treeExample.txt");
   
@@ -548,5 +555,12 @@ int main() {
   } else {
     std::cout << "Couldn't open file\n";
   }
+
+  RedBlackTree bst2 = bst.clone();
+  // RedBlackTree bst2 = RedBlackTree(bst);
+  bst.insert(10);
+  bst2.insert(5);
+  bst2.inorder();
+  // bst2.printTree();
   return 0;  
 }
