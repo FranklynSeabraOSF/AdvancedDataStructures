@@ -57,8 +57,8 @@ class RedBlackTree {
       tree = this->previousTree;
       versionToGoBack--;
 
-      while (versionToGoBack > 0) {
-        tree = this->previousTree;
+      while (versionToGoBack > 0 && tree != nullptr && isNodePtrValid(tree->getRoot())) {
+        tree = tree->previousTree;
         versionToGoBack--;
       }
       return tree;
@@ -72,7 +72,6 @@ class RedBlackTree {
       if (node != TNULL) {
         returnNode = sucessorHelper(node->left, key);
         if (node->data > key) {
-          cout << "Sucessor: " << node->data << endl;
           return node;
         }
         returnNode = sucessorHelper(node->right, key);
@@ -112,7 +111,7 @@ class RedBlackTree {
     }
 
     NodePtr searchTreeHelper(NodePtr node, int key) {
-      if (node == TNULL || key == node->data) {
+      if (node == TNULL || key == node->data || isNodePtrValid(node) == false) {
         return node;
       }
 
@@ -321,29 +320,27 @@ class RedBlackTree {
       previousTree = nullptr;
     }
     RedBlackTree(const RedBlackTree* oldTree) {
-      TNULL = deepCopyNode(oldTree->TNULL);
       root = deepCopyNode(oldTree->root);
+      TNULL = deepCopyNode(oldTree->TNULL);;
       version = oldTree->version;
       previousTree = oldTree->previousTree;
      }
-    ~RedBlackTree() {
-      delete TNULL;
-      delete root;
-    }
     RedBlackTree operator=(const RedBlackTree& rbt) {
       RedBlackTree tree2(rbt);
       return tree2;
     };
-    RedBlackTree clone() {
-      RedBlackTree treeClone = new RedBlackTree();
-      treeClone.root = deepCopyNode(root);
-      treeClone.TNULL = deepCopyNode(TNULL);
-      treeClone.version = version;
+
+    RedBlackTree* PointerClone() {
+      RedBlackTree* treeClone = new RedBlackTree();
+
+      treeClone->root = deepCopyNode(root);
+      treeClone->TNULL = deepCopyNode(TNULL);
+      treeClone->version = version;
       if (previousTree != nullptr) {
-        RedBlackTree previousTreeClone = new RedBlackTree(previousTree);    
-        treeClone.previousTree = &previousTreeClone;
+        RedBlackTree* previousTreeClone = new RedBlackTree(previousTree); 
+        treeClone->previousTree = previousTreeClone;
       } else {
-        treeClone.previousTree = previousTree;
+        treeClone->previousTree = previousTree;
       }
       return treeClone; 
     }
@@ -379,8 +376,10 @@ class RedBlackTree {
     }
 
     NodePtr minimum(NodePtr node) {
-      while (node->left != TNULL) {
-        node = node->left;
+      if (isNodePtrValid(node)) {
+        while (node->left != TNULL && isNodePtrValid(node->left)) {
+          node = node->left;
+        }
       }
       return node;
     }
@@ -393,10 +392,10 @@ class RedBlackTree {
     }
 
     NodePtr successor(int key, int version) {
-      RedBlackTree tree = getTreeByVersion(version);
-      NodePtr x = this->searchTree(key);
+      RedBlackTree* tree = getTreeByVersion(version);
+      NodePtr x = tree->searchTree(key);
       if (x == TNULL) {
-        return sucessorHelper(this->getRoot(), key);
+        return sucessorHelper(tree->getRoot(), key);
       }
       if (x->right != TNULL) {
         return minimum(x->right);
@@ -463,10 +462,9 @@ class RedBlackTree {
 
     // Inserting a node
     void insert(int key) {
-      RedBlackTree oldTree = this->clone();
-      this->previousTree = &oldTree;
-      cout << this->previousTree << endl;
-      this->previousTree->inorder();
+      RedBlackTree* oldTree = this->PointerClone();
+      this->previousTree = oldTree;
+
       this->version++;
       NodePtr node = new Node;
       node->parent = nullptr;
@@ -512,9 +510,8 @@ class RedBlackTree {
     }
 
     void deleteNode(int data) {
-      RedBlackTree oldTree = this->clone();
-      this->previousTree = &oldTree;
-      cout << this->previousTree << endl;
+      RedBlackTree* oldTree = this->PointerClone();
+      this->previousTree = oldTree;
       this->version++;
       deleteNodeHelper(this->root, data);
     }
@@ -551,7 +548,8 @@ int main() {
         std::string valueToFindSucessor = data.substr(0, line.find(" "));
         std::string version = data.substr(line.find(" "), line.find("\n"));
         NodePtr node = bst.successor(stoi(valueToFindSucessor), stoi(version));
-        std::cout << "SUC" << valueToFindSucessor << ": " << node->data << std::endl;
+        std::cout << "SUC" << valueToFindSucessor << version << std::endl;
+        std::cout << node->data << std::endl;
       } else if (command == "IMP") {
         std::string version = line.substr(line.find(" "), line.find("\n"));
         std::cout << "IMP" << version  << std::endl;
@@ -561,31 +559,6 @@ int main() {
   } else {
     std::cout << "Couldn't open file\n";
   }
-
-  // RedBlackTree bst2 = bst.clone();
-  // bst.previousTree = &bst2;
-  // bst.insert(5);
-  // bst.previousTree->previousTree->inorder();
-  // bst2.inorder();
-
-
-
-
-  // RedBlackTree bst3 = bst.clone();
-  // bst.previousTree = &bst3;
-  // bst.insert(10);
-
-  // cout << bst.version << endl;
-  // cout << bst3.version << endl;
-
-  // cout << bst2.version << endl;
-  // cout << bst2.previousTree->version << endl;
-
-  // bst.previousTree->previousTree->inorder();
-
-  // bst2.previousTree->inorder();
-  // bst2.inorder();
-
 
   return 0;  
 }
