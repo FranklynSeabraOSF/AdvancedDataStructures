@@ -6,7 +6,6 @@
 #include <limits>
 using namespace std;
 
-
 struct Node {
   int data;
   Node *parent;
@@ -17,37 +16,40 @@ struct Node {
 
 typedef Node *NodePtr;
 
+bool isNodePtrValid(NodePtr node) {
+  return node != nullptr && node->data > 0 && node != NULL && node->data < 38484704;
+}
+
+bool isNodeValid(Node node) {
+  return node.data > 0 && node.data < 38484704;
+}
+
+NodePtr deepCopyNode(NodePtr node) {
+  NodePtr newNode = new Node();
+  if (isNodePtrValid(node)) {
+    newNode->data = node->data;
+    newNode->color = node->color;
+    newNode->parent = node->parent;
+    newNode->left = new Node();
+    if (isNodePtrValid(node->left)) {
+      newNode->left = deepCopyNode(node->left);
+    }
+    newNode->right = new Node();
+    if (isNodePtrValid(node->right)) {
+      newNode->right = deepCopyNode(node->right);
+    }
+  }
+  return newNode;
+}
+
 class RedBlackTree { 
   private:
     NodePtr root;
     NodePtr TNULL;
 
-    void initializeNULLNode(NodePtr node, NodePtr parent) {
-      node->data = 0;
-      node->parent = parent;
-      node->left = nullptr;
-      node->right = nullptr;
-      node->color = 0;
-    }
-
-    NodePtr deepCopyNode(NodePtr node) {
-      if (node == nullptr || node->data < 0 || node == NULL || !node || node->data > 38484704 ) {
-        return nullptr;
-      }
-      cout << "deepCopyNode: " << node->data << endl;
-      NodePtr newNode = new Node();
-      newNode->data = node->data;
-      newNode->color = node->color;
-      newNode->parent = node->parent;
-      node->left = deepCopyNode(node->left);
-      node->right = deepCopyNode(node->right);
-      return newNode;
-    }
-
-
-    RedBlackTree getTreeByVersion(int version) {
+    RedBlackTree* getTreeByVersion(int version) {
       if (version >= this->version) {
-        return *this;
+        return this;
       }
       
       RedBlackTree *tree;
@@ -55,12 +57,11 @@ class RedBlackTree {
       tree = this->previousTree;
       versionToGoBack--;
 
-      while (versionToGoBack > 0) {
-        tree = this->previousTree;
+      while (versionToGoBack > 0 && tree != nullptr && isNodePtrValid(tree->getRoot())) {
+        tree = tree->previousTree;
         versionToGoBack--;
       }
-      tree->printTree();
-      return *tree;
+      return tree;
 
     }
 
@@ -71,7 +72,6 @@ class RedBlackTree {
       if (node != TNULL) {
         returnNode = sucessorHelper(node->left, key);
         if (node->data > key) {
-          cout << "Sucessor: " << node->data << endl;
           return node;
         }
         returnNode = sucessorHelper(node->right, key);
@@ -90,12 +90,12 @@ class RedBlackTree {
 
     // Inorder
     void inOrderHelper(NodePtr node, int depth ) {
-      if (node != TNULL) {
+      if (isNodePtrValid(node)) {
         int nextDepth = depth + 1;
         inOrderHelper(node->left, nextDepth);
         cout << node->data << ",";
         cout << depth << ",";
-        string sColor = root->color ? "R" : "N";
+        string sColor = node->color ? "R" : "N";
         cout << sColor << " ";
         inOrderHelper(node->right, nextDepth);
       }
@@ -111,7 +111,7 @@ class RedBlackTree {
     }
 
     NodePtr searchTreeHelper(NodePtr node, int key) {
-      if (node == TNULL || key == node->data) {
+      if (node == TNULL || key == node->data || isNodePtrValid(node) == false) {
         return node;
       }
 
@@ -290,7 +290,7 @@ class RedBlackTree {
     }
 
     void printHelper(NodePtr root, string indent, bool last) {
-      if (root != TNULL) {
+      if (isNodePtrValid(root) && root != TNULL) {
         cout << indent;
         if (last) {
           cout << "R----";
@@ -319,29 +319,47 @@ class RedBlackTree {
       version = 0;
       previousTree = nullptr;
     }
-    RedBlackTree(const RedBlackTree& oldTree) { 
-      TNULL = new Node;
-      NodePtr newRoot = oldTree.root;
-      NodePtr leftNode = oldTree.TNULL->left;
-      NodePtr rightNode = oldTree.TNULL->right;
-      TNULL->color = oldTree.TNULL->color;
-      // root = deepCopyNode(oldTree.root);
-      // TNULL->left = deepCopyNode(oldTree.TNULL->left);
-      // TNULL->right = deepCopyNode(oldTree.TNULL->right);
-      root = newRoot;
-      TNULL->left = leftNode;
-      TNULL->right = rightNode;
-      version = oldTree.version;
-      previousTree = oldTree.previousTree;
+    RedBlackTree(const RedBlackTree* oldTree) {
+      root = deepCopyNode(oldTree->root);
+      TNULL = deepCopyNode(oldTree->TNULL);;
+      version = oldTree->version;
+      previousTree = oldTree->previousTree;
      }
-    ~RedBlackTree() {
-      delete TNULL;
+    RedBlackTree operator=(const RedBlackTree& rbt) {
+      RedBlackTree tree2(rbt);
+      return tree2;
+    };
+
+    RedBlackTree* PointerClone() {
+      RedBlackTree* treeClone = new RedBlackTree();
+
+      treeClone->root = deepCopyNode(root);
+      treeClone->TNULL = deepCopyNode(TNULL);
+      treeClone->version = version;
+      if (previousTree != nullptr) {
+        RedBlackTree* previousTreeClone = new RedBlackTree(previousTree); 
+        treeClone->previousTree = previousTreeClone;
+      } else {
+        treeClone->previousTree = previousTree;
+      }
+      return treeClone; 
     }
-    // RedBlackTree& operator=(const RedBlackTree& rhs) {return *this;};
-    RedBlackTree* clone() const { return new RedBlackTree(*this); }
+
+    void initializeNULLNode(NodePtr node, NodePtr parent) {
+      node->data = 0;
+      node->parent = parent;
+      node->left = nullptr;
+      node->right = nullptr;
+      node->color = 0;
+    }
 
     void preorder() {
       preOrderHelper(this->root);
+    }
+
+    void inorderByVersion(int version) {
+      RedBlackTree* tree = getTreeByVersion(version);
+      tree->inorder();
     }
 
     void inorder() {
@@ -358,8 +376,10 @@ class RedBlackTree {
     }
 
     NodePtr minimum(NodePtr node) {
-      while (node->left != TNULL) {
-        node = node->left;
+      if (isNodePtrValid(node)) {
+        while (node->left != TNULL && isNodePtrValid(node->left)) {
+          node = node->left;
+        }
       }
       return node;
     }
@@ -372,10 +392,10 @@ class RedBlackTree {
     }
 
     NodePtr successor(int key, int version) {
-      // RedBlackTree tree = getTreeByVersion(version);
-      NodePtr x = this->searchTree(key);
+      RedBlackTree* tree = getTreeByVersion(version);
+      NodePtr x = tree->searchTree(key);
       if (x == TNULL) {
-        return sucessorHelper(this->getRoot(), key);
+        return sucessorHelper(tree->getRoot(), key);
       }
       if (x->right != TNULL) {
         return minimum(x->right);
@@ -442,8 +462,9 @@ class RedBlackTree {
 
     // Inserting a node
     void insert(int key) {
-      RedBlackTree oldTree = RedBlackTree(*this);
-      this->previousTree = &oldTree;
+      RedBlackTree* oldTree = this->PointerClone();
+      this->previousTree = oldTree;
+
       this->version++;
       NodePtr node = new Node;
       node->parent = nullptr;
@@ -455,7 +476,7 @@ class RedBlackTree {
       NodePtr y = nullptr;
       NodePtr x = this->root;
 
-      while (x != TNULL) {
+      while (isNodePtrValid(x) && x != TNULL) {
         y = x;
         if (node->data < x->data) {
           x = x->left;
@@ -489,8 +510,8 @@ class RedBlackTree {
     }
 
     void deleteNode(int data) {
-      RedBlackTree oldTree = RedBlackTree(*this);
-      this->previousTree = &oldTree;
+      RedBlackTree* oldTree = this->PointerClone();
+      this->previousTree = oldTree;
       this->version++;
       deleteNodeHelper(this->root, data);
     }
@@ -505,6 +526,7 @@ class RedBlackTree {
 
 int main() {
   RedBlackTree bst;
+
   std::string fileContent;
   std::ifstream entryFile("treeExample.txt");
   
@@ -525,23 +547,18 @@ int main() {
         std::string data = line.substr(line.find(" "), line.find("\n"));
         std::string valueToFindSucessor = data.substr(0, line.find(" "));
         std::string version = data.substr(line.find(" "), line.find("\n"));
-        // NodePtr node = bst.successor(stoi(valueToFindSucessor), stoi(version));
-        // std::cout << "SUC" << valueToFindSucessor << ": " << node->data << std::endl;
+        NodePtr node = bst.successor(stoi(valueToFindSucessor), stoi(version));
+        std::cout << "SUC" << valueToFindSucessor << version << std::endl;
+        std::cout << node->data << std::endl;
       } else if (command == "IMP") {
         std::string version = line.substr(line.find(" "), line.find("\n"));
         std::cout << "IMP" << version  << std::endl;
+        bst.inorderByVersion(stoi(version));
       }
     }
   } else {
     std::cout << "Couldn't open file\n";
   }
-  RedBlackTree bst2 = bst;
-  bst.printTree();
-  bst.inorder();
-  bst2.inorder();
-  // cout << bst.getRoot()->left->left->color << endl;
-  // cout << bst2.getRoot()->left->left->color << endl;
-  // bst2.printTree();
-  // bst.previousTree->printTree();
+
   return 0;  
 }
