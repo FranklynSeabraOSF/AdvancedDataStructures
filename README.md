@@ -9,9 +9,9 @@ I added the persistency as the assignment asked for it.
 
 ```cd PersistentRedBlackTree```
 
-To compile on windows: ```g++ -o RedBlackTree.exe RedBlackTree.cpp -g && ./RedBlackTree.exe```
+To compile on windows: ```g++ -o PersistentRedBlackTree.exe PersistentRedBlackTree.cpp -g && ./PersistentRedBlackTree.exe```
 
-To compile on linux/mac: ```g++ -o RedBlackTree.out RedBlackTree.cpp -g && ./RedBlackTree.out```
+To compile on linux/mac: ```g++ -o PersistentRedBlackTree.out PersistentRedBlackTree.cpp -g && ./PersistentRedBlackTree.out```
 
 treeExample.txt is the file containing the instructins to the tree.
 
