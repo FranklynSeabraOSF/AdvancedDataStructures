@@ -41,28 +41,34 @@ bool isNodeValid(Node node) {
   return node.data > 0 && node.data < 38484704;
 }
 
-
-void applyModToNode(NodePtr node, Mod* mod) {
-  if (mod == nullptr || node == nullptr) {
-    return;
+NodePtr DeepCopyNode(NodePtr node) {
+  NodePtr newNode = new Node();
+  if (isNodePtrValid(node)) {
+    newNode->data = node->data;
+    newNode->color = node->color;
+    newNode->parent = node->parent;
+    newNode->version = node->version;
+    newNode->nextVersion = node->nextVersion;
+    newNode->mods_length = node->mods_length;  
+    int l = 0;
+    while(l < node->mods_length) {
+      newNode->mods[l] = node->mods[l];
+      l++;
+    }
+    newNode->left = new Node();
+    if (isNodePtrValid(node->left)) {
+      newNode->left = DeepCopyNode(node->left);
+    }
+    newNode->right = new Node();
+    if (isNodePtrValid(node->right)) {
+      newNode->right = DeepCopyNode(node->right);
+    }
   }
-  string field = mod->field;
-  NodePtr value = mod->value;
-  if (field == "data"){
-    node->data = value->data;
-  } else if (field == "color"){
-    node->color = value->color;
-  } else if (field == "parent"){
-    node->parent = value;
-  } else if (field == "left"){
-    node->left = value;
-  } else if (field == "right"){
-    node->right = value;
-  }
-};
+  return newNode;
+}
 
 NodePtr CopyNode(NodePtr node) {
-  if (node == nullptr) {
+  if (node == nullptr || !isNodePtrValid(node)) {
     return nullptr;
   }
   NodePtr nodeCopy = new Node;
@@ -81,6 +87,28 @@ NodePtr CopyNode(NodePtr node) {
   }
   return nodeCopy;
 }
+
+
+NodePtr applyModToNode(NodePtr nodeparam, Mod* mod) {
+  NodePtr node = CopyNode(nodeparam);
+  if (mod == nullptr || node == nullptr) {
+    return node;
+  }
+  string field = mod->field;
+  NodePtr value = mod->value;
+  if (field == "data"){
+    node->data = value->data;
+  } else if (field == "color"){
+    node->color = value->color;
+  } else if (field == "parent"){
+    node->parent = value;
+  } else if (field == "left"){
+    node->left = value;
+  } else if (field == "right"){
+    node->right = value;
+  }
+  return node;
+};
 
 NodePtr applyModToNewNode(NodePtr nodeParam, Mod* mod) {
   NodePtr node = CopyNode(nodeParam);  
@@ -122,7 +150,7 @@ NodePtr getLatestNodeVersion(NodePtr nodeParam) {
   if (node->nextVersion == nullptr) {
     int i = 0;
     while(i < node->mods_length && node->mods[i] != nullptr) {
-      applyModToNode(node, node->mods[i]);
+      node = applyModToNode(node, node->mods[i]);
       i++;
     }
     return node;
@@ -131,10 +159,6 @@ NodePtr getLatestNodeVersion(NodePtr nodeParam) {
 }
 
 void addMod(NodePtr node, string field, NodePtr value, int version) {
-  if (!isNodePtrValid(node)) {
-    cout << "Error in addMod: node not valid. Field: " << field << endl;
-    return;
-  };
   if (node->nextVersion != nullptr) {
     addMod(node->nextVersion, field, value, version);
     return;
@@ -157,7 +181,7 @@ void addMod(NodePtr node, string field, NodePtr value, int version) {
     
     // Apply mods to new node to obtain new node    
     for (int i = 0; i < iterNode->mods_length; i++){
-      applyModToNode(newNode, iterNode->mods[i]);
+      newNode = applyModToNode(newNode, iterNode->mods[i]);
     };
 
     // mods vazios
@@ -245,7 +269,7 @@ class RedBlackTree {
     NodePtr sucessorHelper(NodePtr node, int key) {
       NodePtr returnNode = TNULL;
       returnNode->data = numeric_limits<int>::max();
-      if (node != TNULL) {
+      if (node != TNULL && isNodePtrValid(node)) {
         returnNode = sucessorHelper(node->left, key);
         if (node->data > key) {
           return node;
@@ -299,11 +323,11 @@ class RedBlackTree {
 
     // For balancing the tree after deletion
     void deleteFix(NodePtr x) {
-      NodePtr s;
+      NodePtr s = new Node;
       NodePtr nodeAux0 = new Node;
       nodeAux0->color = 0;
       NodePtr nodeAux1 = new Node;
-      nodeAux1->color = 0;
+      nodeAux1->color = 0;      
       while (x != root && getLatestNodeVersion(x)->color == 0) {
         if (x == getLatestNodeVersion(getLatestNodeVersion(x)->parent)->left) {
           s = getLatestNodeVersion(getLatestNodeVersion(x)->parent)->right;
@@ -313,15 +337,17 @@ class RedBlackTree {
             // x->parent->color = 1;
             addMod(getLatestNodeVersion(x)->parent, "color", nodeAux1, this->currentVersion);
             leftRotate(getLatestNodeVersion(x)->parent);
-            s = getLatestNodeVersion(getLatestNodeVersion(x)->parent)->right;
+            s = getLatestNodeVersion(getLatestNodeVersion(x)->parent)->right;            
           }
 
-          if (getLatestNodeVersion(getLatestNodeVersion(s)->left)->color == 0 && getLatestNodeVersion(getLatestNodeVersion(s)->right)->color == 0) {
+          NodePtr sLeft = isNodePtrValid(s) && isNodePtrValid(getLatestNodeVersion(s)->left)  ? getLatestNodeVersion(s)->left : nullptr;
+          NodePtr sRight = isNodePtrValid(s) && isNodePtrValid(getLatestNodeVersion(s)->left) ? getLatestNodeVersion(s)->right : nullptr;
+          if ( isNodePtrValid(sLeft) && getLatestNodeVersion(sLeft)->color == 0 && isNodePtrValid(sRight) && getLatestNodeVersion(sRight)->color == 0) {
             // s->color = 1;
             addMod(s, "color", nodeAux1, this->currentVersion);
             x = getLatestNodeVersion(x)->parent;
           } else {
-            if (getLatestNodeVersion(getLatestNodeVersion(s)->right)->color == 0) {
+            if (isNodePtrValid(getLatestNodeVersion(sRight)) && getLatestNodeVersion(sRight)->color == 0) {
               // s->left->color = 0;
               addMod(getLatestNodeVersion(s)->left, "color", nodeAux0, this->currentVersion);
               // s->color = 1;
@@ -335,13 +361,15 @@ class RedBlackTree {
             // x->parent->color = 0;
             addMod(getLatestNodeVersion(x)->parent, "color", nodeAux0, this->currentVersion);
             // s->right->color = 0;
-            addMod(getLatestNodeVersion(s)->right, "color", nodeAux0, this->currentVersion);
+            if (isNodePtrValid(getLatestNodeVersion(s))) {
+              addMod(getLatestNodeVersion(s)->right, "color", nodeAux0, this->currentVersion);
+            }            
             leftRotate(getLatestNodeVersion(x)->parent);
             x = root;
           }
         } else {
           s = getLatestNodeVersion(getLatestNodeVersion(x)->parent)->left;
-          if (s->color == 1) {
+          if (isNodePtrValid(s) && s->color == 1) {
             // s->color = 0;
             addMod(s, "color", nodeAux0, this->currentVersion);
             // x->parent->color = 1;
@@ -355,7 +383,7 @@ class RedBlackTree {
             addMod(s, "color", nodeAux1, this->currentVersion);
             x = getLatestNodeVersion(x)->parent;
           } else {
-            if (getLatestNodeVersion(getLatestNodeVersion(s)->left)->color == 0) {
+            if (isNodePtrValid(getLatestNodeVersion(getLatestNodeVersion(s)->left)) && getLatestNodeVersion(getLatestNodeVersion(s)->left)->color == 0) {
               // s->right->color = 0;
               addMod(getLatestNodeVersion(s)->right, "color", nodeAux0, this->currentVersion);
               // s->color = 1;
@@ -398,7 +426,7 @@ class RedBlackTree {
     void deleteNodeHelper(NodePtr node, int key) {
       NodePtr z = TNULL;
       NodePtr x, y;
-      while (node != TNULL) {
+      while (node != TNULL) {  
         if (getLatestNodeVersion(node)->data == key) {
           z = node;
         }
@@ -409,7 +437,6 @@ class RedBlackTree {
           node = getLatestNodeVersion(node)->left;
         }
       }
-
       if (z == TNULL) {
         cout << "Key " << key << " not found in the tree" << endl;
         return;
@@ -417,12 +444,13 @@ class RedBlackTree {
 
       y = z;
       int y_original_color = getLatestNodeVersion(y)->color;
-      if (z->left == TNULL) {
+      
+      if (getLatestNodeVersion(z)->left == TNULL) {
         x = getLatestNodeVersion(z)->right;
         rbTransplant(z, getLatestNodeVersion(z)->right);
       } else if (getLatestNodeVersion(z)->right == TNULL) {
-        x = z->left;
-        rbTransplant(z, getLatestNodeVersion(z)->left);
+        x = getLatestNodeVersion(z)->left;
+        rbTransplant(z, getLatestNodeVersion(z)->left);        
       } else {
         y = minimum(getLatestNodeVersion(z)->right);
         y_original_color = getLatestNodeVersion(y)->color;
@@ -447,7 +475,7 @@ class RedBlackTree {
         addMod(y, "color", z, this->currentVersion);
       }
       delete z;
-      if (y_original_color == 0) {
+      if (y_original_color == 0) {        
         deleteFix(x);
       }      
       while (root->nextVersion != nullptr) {
@@ -465,8 +493,9 @@ class RedBlackTree {
 
       while (getLatestNodeVersion(getLatestNodeVersion(k)->parent)->color == 1 && isNodePtrValid(getLatestNodeVersion(k)->parent) && isNodePtrValid(getLatestNodeVersion(getLatestNodeVersion(getLatestNodeVersion(k)->parent)->parent)) ) {
         if (getLatestNodeVersion(k)->parent == getLatestNodeVersion(getLatestNodeVersion(getLatestNodeVersion(k)->parent)->parent)->right) {
-          uncle = getLatestNodeVersion(getLatestNodeVersion(k)->parent->parent)->left;
-          if (getLatestNodeVersion(uncle)->color == 1) {            
+
+          uncle = getLatestNodeVersion(getLatestNodeVersion(getLatestNodeVersion(k)->parent)->parent)->left;
+          if (isNodePtrValid(getLatestNodeVersion(uncle)) && getLatestNodeVersion(uncle)->color == 1) {
             // u->color = 0;
             addMod(uncle, "color", nodeAux0, this->currentVersion);
             // k->parent->color = 0;
@@ -489,7 +518,7 @@ class RedBlackTree {
         } else {        
           uncle = getLatestNodeVersion(getLatestNodeVersion(getLatestNodeVersion(k)->parent)->parent)->right;
 
-          if (getLatestNodeVersion(uncle)->color == 1) {
+          if (isNodePtrValid(getLatestNodeVersion(uncle)) && getLatestNodeVersion(uncle)->color == 1) {
             // u->color = 0;
             addMod(uncle, "color", nodeAux0, this->currentVersion);
             // k->parent->color = 0;
@@ -515,7 +544,7 @@ class RedBlackTree {
       }   
 
       // root->color = 0;
-      addMod(root, "color", nodeAux0, this->currentVersion);
+      addMod(this->root, "color", nodeAux0, this->currentVersion);
       while (root->nextVersion != nullptr) {
         this->root = this->root->nextVersion;
       }
@@ -576,22 +605,31 @@ class RedBlackTree {
       preOrderHelper(this->root);
     }
 
-    void inorderByVersion(int version) {      
-      NodePtr node = getLatestNodeVersion(this->roots[version]);
+    void inorderByVersion(int version) {
+      int treeVersion = version;
+      if (version > this->currentVersion) {
+        treeVersion = this->currentVersion;
+      }
+      NodePtr node = this->roots[treeVersion];
       this->inorder(node);
+      // cout << " in version " << treeVersion << endl;
     }
 
     void inorder(NodePtr node) {
-      inOrderHelper(node, 0);
-      cout << endl;
+      inOrderHelper(node, 0);      
     }
 
     void postorder() {
       postOrderHelper(this->root);
     }
 
-    NodePtr searchTree(int k) {
-      return searchTreeHelper(this->root, k);
+    NodePtr searchTree(int k, int version) {
+      int workVersion = version;
+      if (version > this->currentVersion) {
+        workVersion = this->currentVersion;
+      }
+      NodePtr root = this->roots[workVersion];
+      return searchTreeHelper(root, k);
     }
 
     NodePtr minimum(NodePtr node) {
@@ -600,22 +638,18 @@ class RedBlackTree {
           node = node->left;
         }
       }
-      return node;
-    }
 
-    NodePtr maximum(NodePtr node) {
-      while (node->right != TNULL) {
-        node = node->right;
-      }
       return node;
     }
 
     NodePtr successor(int key, int version) {
-      // RedBlackTree* tree = getTreeByVersion(version);
-      NodePtr x = this->searchTree(key);
-
-      if (x == TNULL) {
-        return sucessorHelper(this->getRoot(), key);
+      int workVersion = version;
+      if (version > this->currentVersion) {
+        workVersion = this->currentVersion;
+      }
+      NodePtr x = this->searchTree(key, workVersion);
+      if (x == TNULL || !isNodePtrValid(x)) {
+        return sucessorHelper(this->roots[workVersion], key);
       }
       if (x->right != TNULL) {
         return minimum(x->right);
@@ -629,25 +663,13 @@ class RedBlackTree {
       return y;
     }
 
-    NodePtr predecessor(int key) {
-      NodePtr x = searchTree(key);
-      if (x->left != TNULL) {
-        return maximum(x->left);
-      }
-
-      NodePtr y = x->parent;
-      while (y != TNULL && x == y->left) {
-        x = y;
-        y = y->parent;
-      }
-
-      return y;
-    }
-
     void leftRotate(NodePtr x) {
       NodePtr y = getLatestNodeVersion(x)->right;
       // x->right = y->left;
-      addMod(x, "right", getLatestNodeVersion(y)->left, this->currentVersion);
+      
+      if (isNodePtrValid(getLatestNodeVersion(y))) {
+        addMod(x, "right", getLatestNodeVersion(y)->left, this->currentVersion);
+      }
       if (getLatestNodeVersion(y)->left != TNULL) {
         // y->left->parent = x;
         addMod(getLatestNodeVersion(y)->left, "parent", x, this->currentVersion);
@@ -696,7 +718,6 @@ class RedBlackTree {
 
     // Inserting a node
     void insert(int key) {    
-      // this->inorderByVersion(this->currentVersion);  
       this->currentVersion++;
 
       NodePtr node = new Node;
@@ -744,21 +765,18 @@ class RedBlackTree {
         NodePtr auxNode = new Node;
         auxNode->color = 0;
         addMod(node, "color", auxNode, this->currentVersion);
-        this->roots[this->currentVersion] = this->root;
-        this->inorderByVersion(this->currentVersion);
+        this->roots[this->currentVersion] = DeepCopyNode(this->root);
         return;
       }
 
 
       if (getLatestNodeVersion(node->parent)->parent == nullptr) {
-        this->roots[this->currentVersion] = this->root;
-        this->inorderByVersion(this->currentVersion);
+        this->roots[this->currentVersion] = DeepCopyNode(this->root);
         return;
       }
       insertFix(node);
-      // Save current version;      
-      this->roots[this->currentVersion] = this->root;
-      this->inorderByVersion(this->currentVersion);
+      // Save current version;
+      this->roots[this->currentVersion] = DeepCopyNode(this->root);
     }
 
     NodePtr getRoot() {
@@ -766,16 +784,19 @@ class RedBlackTree {
     }
 
     void deleteNode(int data) {      
-      this->currentVersion++;
+      this->currentVersion++;      
       deleteNodeHelper(this->root, data);
-      this->roots[this->currentVersion] = this->root;
-      this->inorderByVersion(this->currentVersion);
+      this->roots[this->currentVersion] = DeepCopyNode(this->root);
     }
 
-    void printTree() {
-      cout << "Printing tree version " << this->currentVersion << endl;
+    void printTree(int version) {
+      int treeVersion = version;
+      if (version > this->currentVersion) {
+        treeVersion = this->currentVersion;
+      }
+      cout << "Printing tree version " << treeVersion << endl;
       if (root) {
-        printHelper(this->root, "", true);
+        printHelper(this->roots[treeVersion], "", true);
       }
     }
 };
@@ -805,7 +826,17 @@ int main() {
         std::string version = data.substr(line.find(" "), line.find("\n"));
         NodePtr node = bst.successor(stoi(valueToFindSucessor), stoi(version));
         std::cout << "SUC" << valueToFindSucessor << version << std::endl;
-        std::cout << node->data << std::endl;
+        if (isNodePtrValid(node)) {
+          bool isInf = node->data > 2147483645;
+          if (isInf) {
+            std::cout << "inf" << std::endl;
+          } else {
+            std::cout << node->data << std::endl;
+          };
+        } else {
+          cout << "Node sucessor not found" << endl;
+        }
+
       } else if (command == "IMP") {
         std::string version = line.substr(line.find(" "), line.find("\n"));
         std::cout << "IMP" << version  << std::endl;
@@ -815,6 +846,9 @@ int main() {
   } else {
     std::cout << "Couldn't open file\n";
   }
+
+
+  // cout << "Teste: " << bst.roots[3]->right->data << endl;
 
   return 0;  
 }
