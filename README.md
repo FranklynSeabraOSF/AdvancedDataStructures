@@ -2,7 +2,7 @@
 This repository was created to hold Assignments from CKP8077 - Advanced Data Sctructures at UFC.
 
 
-Credits to https://www.programiz.com/dsa/red-black-tree to help implementing the standart red-black-tree.
+Credits to https://www.programiz.com/dsa/red-black-tree to help implementing the standard red-black-tree.
 
 I added the persistency as the assignment asked for it.
 # How to use this repo:
